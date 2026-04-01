@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>EmoSenseNet</title>
+  <style>
+    :root{
+      --bg0:#060611;
+      --bg1:#0a0a18;
+      --panel:rgba(255,255,255,.06);
+      --panel2:rgba(255,255,255,.08);
+      --stroke:rgba(255,255,255,.14);
+      --text:#e9ecff;
+      --muted:rgba(233,236,255,.72);
+      --muted2:rgba(233,236,255,.55);
+
+      --cyan:#00f5ff;
+      --pink:#ff2bd6;
+      --purple:#8a5bff;
+      --green:#37ff8b;
+      --amber:#ffcc66;
+      --red:#ff4d6d;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --glowC: 0 0 26px rgba(0,245,255,.35);
+      --glowP: 0 0 26px rgba(255,43,214,.25);
+
+      --r16: 16px;
+      --r20: 20px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 18% 10%, rgba(0,245,255,.18), transparent 55%),
+        radial-gradient(900px 700px at 76% 18%, rgba(255,43,214,.14), transparent 52%),
+        radial-gradient(900px 700px at 55% 86%, rgba(138,91,255,.15), transparent 52%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    /* Subtle cyber grid + noise */
+    .bg{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:-1;
+    }
+    .bg::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      opacity:.35;
+      background:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse at 30% 20%, black 35%, transparent 70%);
+      transform: translateZ(0);
+    }
+    .bg::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      opacity:.10;
+      background-image:
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="260" height="260" filter="url(%23n)" opacity="0.55"/></svg>');
+      background-size:260px 260px;
+      mix-blend-mode: overlay;
+    }
+
+    .wrap{
+      width:min(1200px, 92vw);
+      margin: clamp(18px, 4vw, 46px) auto;
+      padding-bottom: 36px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 18px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .logo{
+      width:44px;height:44px;
+      border-radius:14px;
+      background: linear-gradient(135deg, rgba(0,245,255,.34), rgba(255,43,214,.24), rgba(138,91,255,.24));
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: var(--shadow), var(--glowC), var(--glowP);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo::after{
+      content:"";
+      position:absolute;
+      inset:-60% -30%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+      transform: rotate(24deg);
+      animation: sweep 3.4s linear infinite;
+      opacity:.55;
+    }
+    @keyframes sweep{
+      0%{transform: translateX(-40%) rotate(24deg)}
+      100%{transform: translateX(55%) rotate(24deg)}
+    }
+
+    h1{
+      margin:0;
+      font-size: clamp(20px, 2.4vw, 32px);
+      letter-spacing: .4px;
+      line-height: 1.1;
+    }
+
+    .subtitle{
+      margin: 6px 0 0;
+      color:var(--muted);
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+
+    .badgeRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:flex-end;
+    }
+
+    .chip{
+      font-size: 12px;
+      color: rgba(233,236,255,.84);
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr 1.25fr;
+      gap: 16px;
+      align-items:start;
+    }
+
+    @media (max-width: 920px){
+      header{align-items:flex-start; flex-direction:column}
+      .badgeRow{justify-content:flex-start}
+      .grid{grid-template-columns:1fr}
+    }
+
+    .panel{
+      border-radius: var(--r20);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+    }
+
+    .panelHeader{
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+
+    .panelHeader h2{
+      margin:0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      color: rgba(233,236,255,.9);
+    }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted2);
+      letter-spacing: .15px;
+    }
+
+    .panelBody{ padding: 16px; }
+
+    textarea{
+      width:100%;
+      min-height: 150px;
+      resize: vertical;
+      padding: 14px 14px;
+      border-radius: var(--r16);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      outline:none;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    textarea:focus{
+      border-color: rgba(0,245,255,.45);
+      box-shadow: 0 0 0 4px rgba(0,245,255,.12), inset 0 0 0 1px rgba(0,0,0,.18);
+    }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top: 12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .btnRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+
+    button{
+      border:0;
+      cursor:pointer;
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-weight: 750;
+      letter-spacing: .2px;
+      color: rgba(8,8,18,.95);
+      background: linear-gradient(135deg, rgba(0,245,255,1), rgba(255,43,214,1));
+      box-shadow: 0 14px 35px rgba(0,0,0,.32), 0 0 0 1px rgba(255,255,255,.12), var(--glowC);
+      transition: transform .12s ease, filter .12s ease;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+    }
+    button:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+    button:active{ transform: translateY(0px) scale(.99); }
+    button:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
+
+    .btnGhost{
+      color: rgba(233,236,255,.92);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 14px 35px rgba(0,0,0,.32);
+      backdrop-filter: blur(10px);
+    }
+    .btnGhost:hover{ border-color: rgba(255,43,214,.28); box-shadow: 0 14px 35px rgba(0,0,0,.32), var(--glowP); }
+
+    .spinner{
+      width:16px;height:16px;
+      border-radius:999px;
+      border: 2px solid rgba(8,8,18,.35);
+      border-top-color: rgba(8,8,18,.95);
+      animation: spin .8s linear infinite;
+      display:none;
+    }
+
+    .running .spinner{ display:inline-block; }
+
+    @keyframes spin{
+      to{ transform: rotate(360deg); }
+    }
+
+    .examples{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+    }
+
+    .pill{
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.05);
+      color: rgba(233,236,255,.86);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor:pointer;
+      transition: border-color .14s ease, transform .14s ease;
+      user-select:none;
+    }
+    .pill:hover{ border-color: rgba(0,245,255,.32); transform: translateY(-1px); }
+
+    .stack{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .step{
+      border-radius: var(--r20);
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      box-shadow: 0 18px 55px rgba(0,0,0,.42);
+      overflow:hidden;
+      transform: translateY(10px);
+      opacity: 0;
+      filter: blur(6px);
+      transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s ease, filter .45s ease;
+    }
+
+    .step.visible{
+      transform: translateY(0);
+      opacity: 1;
+      filter: blur(0);
+    }
+
+    .stepHead{
+      padding: 14px 14px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+
+    .stepTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0;
+      font-size: 13px;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+    }
+
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: rgba(0,245,255,.95);
+      box-shadow: 0 0 0 4px rgba(0,245,255,.12), 0 0 18px rgba(0,245,255,.55);
+    }
+
+    .dot.pink{ background: rgba(255,43,214,.95); box-shadow: 0 0 0 4px rgba(255,43,214,.10), 0 0 18px rgba(255,43,214,.45); }
+    .dot.purple{ background: rgba(138,91,255,.95); box-shadow: 0 0 0 4px rgba(138,91,255,.10), 0 0 18px rgba(138,91,255,.45); }
+    .dot.green{ background: rgba(55,255,139,.95); box-shadow: 0 0 0 4px rgba(55,255,139,.10), 0 0 18px rgba(55,255,139,.45); }
+    .dot.amber{ background: rgba(255,204,102,.95); box-shadow: 0 0 0 4px rgba(255,204,102,.10), 0 0 18px rgba(255,204,102,.45); }
+
+    .meta{
+      font-size: 12px;
+      color: var(--muted2);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .kv{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(233,236,255,.78);
+    }
+
+    .stepBody{ padding: 14px; }
+
+    .twoCol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 540px){
+      .twoCol{grid-template-columns:1fr}
+    }
+
+    pre{
+      margin:0;
+      padding: 12px 12px;
+      border-radius: var(--r16);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      color: rgba(233,236,255,.92);
+      overflow:auto;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.45;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+    }
+
+    .callout{
+      margin-top: 10px;
+      padding: 12px 12px;
+      border-radius: var(--r16);
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .label{
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .2px;
+    }
+
+    .value{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(233,236,255,.92);
+    }
+
+    .resultPill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 20px 60px rgba(0,0,0,.38);
+    }
+
+    .stateDot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(233,236,255,.45);
+      box-shadow: 0 0 0 5px rgba(233,236,255,.06);
+    }
+
+    .stateDot.pos{ background: rgba(55,255,139,.95); box-shadow: 0 0 0 5px rgba(55,255,139,.10), 0 0 18px rgba(55,255,139,.45); }
+    .stateDot.neg{ background: rgba(255,77,109,.95); box-shadow: 0 0 0 5px rgba(255,77,109,.10), 0 0 18px rgba(255,77,109,.45); }
+    .stateDot.neu{ background: rgba(255,204,102,.95); box-shadow: 0 0 0 5px rgba(255,204,102,.10), 0 0 18px rgba(255,204,102,.45); }
+
+    .bigResult{
+      font-size: 22px;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+    }
+
+    .footerNote{
+      margin-top: 14px;
+      color: var(--muted2);
+      font-size: 12px;
+      letter-spacing: .15px;
+    }
+
+    .srOnly{
+      position:absolute;
+      width:1px;height:1px;
+      padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);
+      white-space:nowrap;border:0;
+    }
+
+    .divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+      margin: 14px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+
+  <div class="wrap" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>EmoSenseNet</h1>
+          <div class="subtitle">NLP + emoji-driven sentiment • step-by-step pipeline visualization</div>
+        </div>
+      </div>
+      <div class="badgeRow">
+        <div class="chip">🧹 Preprocess</div>
+        <div class="chip">😀 Detect Emojis</div>
+        <div class="chip">🧪 Extract Features</div>
+        <div class="chip">🤖 Evaluate</div>
+        <div class="chip">✅ Result</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Input -->
+      <section class="panel" aria-label="Input">
+        <div class="panelHeader">
+          <h2>Input</h2>
+          <div class="hint">Tip: press <span class="kv">Ctrl/⌘ + Enter</span> to analyze.</div>
+        </div>
+        <div class="panelBody">
+          <label class="srOnly" for="inputText">Enter text with emojis</label>
+          <textarea id="inputText" placeholder="Type something like: I feel great today 😍✨ or This is bad 😡💔"></textarea>
+
+          <div class="actions">
+            <div class="btnRow">
+              <button id="runBtn" type="button"><span class="spinner" aria-hidden="true"></span><span id="runLabel">Analyze</span></button>
+              <button id="clearBtn" type="button" class="btnGhost">Clear</button>
+            </div>
+            <div class="hint" id="status">Ready.</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="hint">Quick examples</div>
+          <div class="examples" role="list">
+            <div class="pill" role="listitem" data-example="I feel great and happy 😍😊">I feel great and happy 😍😊</div>
+            <div class="pill" role="listitem" data-example="This is bad and sad 😢">This is bad and sad 😢</div>
+            <div class="pill" role="listitem" data-example="meh 😐">meh 😐</div>
+            <div class="pill" role="listitem" data-example="love it ❤️👍">love it ❤️👍</div>
+          </div>
+
+          <div class="footerNote">
+             Made by Nilay Gupta & Vasundhara Rai
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Steps -->
+      <section class="stack" aria-label="Workflow results">
+        <article class="step" id="step1" data-step="1">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot"></span> 🧾 Input Collection</h3>
+            <div class="meta">
+              <span class="kv" id="metaChars">chars: 0</span>
+              <span class="kv" id="metaTokens">tokens: 0</span>
+              <span class="kv" id="metaEmojis">emojis: 0</span>
+            </div>
+          </div>
+          <div class="stepBody">
+            <pre id="outInput">(waiting for input)</pre>
+          </div>
+        </article>
+
+        <article class="step" id="step2" data-step="2">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot purple"></span> 🧹 Preprocessed Text</h3>
+            <div class="meta"><span class="kv">lowercase • punctuation removed</span></div>
+          </div>
+          <div class="stepBody">
+            <div class="twoCol">
+              <div>
+                <div class="label">Preprocessed text</div>
+                <pre id="outPreText"></pre>
+              </div>
+              <div>
+                <div class="label">Tokenized words</div>
+                <pre id="outTokens"></pre>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step" id="step3" data-step="3">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot pink"></span> 😀 Detected Emojis</h3>
+            <div class="meta"><span class="kv">Unicode regex extraction</span></div>
+          </div>
+          <div class="stepBody">
+            <div class="twoCol">
+              <div>
+                <div class="label">Emoji list</div>
+                <pre id="outEmojiList"></pre>
+              </div>
+              <div>
+                <div class="label">Emoji sentiment mapping</div>
+                <pre id="outEmojiMap"></pre>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step" id="step4" data-step="4">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot amber"></span> 🧪 Feature Extraction</h3>
+            <div class="meta">
+              <span class="kv" id="metaPos">posWords: 0</span>
+              <span class="kv" id="metaNeg">negWords: 0</span>
+              <span class="kv" id="metaTextScore">textScore: 0</span>
+              <span class="kv" id="metaEmojiScore">emojiScore: 0</span>
+            </div>
+          </div>
+          <div class="stepBody">
+            <div class="twoCol">
+              <div>
+                <div class="label">Word counts</div>
+                <pre id="outWordCounts"></pre>
+              </div>
+              <div>
+                <div class="label">Emoji scores</div>
+                <pre id="outEmojiScores"></pre>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="step" id="step5" data-step="5">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot"></span> 🤖 Model Evaluation</h3>
+            <div class="meta">
+              <span class="kv" id="metaRaw">raw: 0</span>
+              <span class="kv" id="metaNorm">normalized: 0.000</span>
+            </div>
+          </div>
+          <div class="stepBody">
+            <pre id="outEval"></pre>
+          </div>
+        </article>
+
+        <article class="step" id="step6" data-step="6">
+          <div class="stepHead">
+            <h3 class="stepTitle"><span class="dot green"></span> ✅ Final Result</h3>
+            <div class="meta">
+              <span class="resultPill"><span id="stateDot" class="stateDot neu"></span><span class="value bigResult" id="outFinal">NEUTRAL</span></span>
+            </div>
+          </div>
+          <div class="stepBody">
+            <div class="callout">
+              <div>
+                <div class="label">Final judgment</div>
+                <div class="value" id="outFinalVerbose">NEUTRAL</div>
+              </div>
+              <div class="hint">Rule: score &gt; 0 → POSITIVE • score &lt; 0 → NEGATIVE • else NEUTRAL</div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ========================
+    // NLP Emoji Sentiment Pipeline (Java → JavaScript)
+    // ========================
+
+    const POS_WORDS = new Set([
+  "good", "great", "happy", "love", "awesome", "excellent", "amazing", "best", "nice", "fantastic", 
+  "wonderful", "cool", "yay", "beautiful", "brilliant", "outstanding", "superb", "perfect", "delighted", 
+  "thrilled", "joy", "cheerful", "positive", "impressive", "spectacular", "bravo", "kind", "friendly", 
+  "lovely", "super", "blessed", "fabulous", "stellar", "magical", "victory"
+]);
+
+const NEG_WORDS = new Set([
+  "bad", "sad", "angry", "hate", "awful", "terrible", "worst", "disappointed", "horrible", "annoyed", 
+  "upset", "mad", "poor", "cry", "miserable", "dreadful", "nasty", "cruel", "rubbish", "trash", 
+  "disgusting", "useless", "broken", "failed", "pain", "sorry", "unhappy", "frustrated", "gross", 
+  "pathetic", "offensive", "worthless", "shame", "furious", "guilty"
+]);
+
+const EMOJI_SCORE = new Map([
+  ["😊", 1], ["😄", 1], ["😍", 1], ["👍", 1], ["❤️", 1], ["❤", 1], ["🌟", 1], ["🎉", 1], 
+  ["✨", 1], ["🔥", 1], ["🙌", 1], ["👏", 1], ["🤩", 1], ["🥰", 1], ["🥳", 1], ["✅", 1],
+  ["😢", -1], ["😡", -1], ["👎", -1], ["💔", -1], ["😞", -1], ["😭", -1], ["😠", -1], ["🤮", -1], 
+  ["💩", -1], ["❌", -1], ["💀", -1], ["😱", -1], ["😒", -1], ["😤", -1], ["😩", -1], ["🚫", -1],
+  ["😐", 0], ["😶", 0], ["🤔", 0], ["🤨", 0], ["🤷", 0], ["🙄", 0], ["👀", 0], ["💤", 0]
+]);
+
+    function supportsUnicodeProps(){
+      try { new RegExp("\\p{Extended_Pictographic}", "u"); return true; } catch { return false; }
+    }
+
+    function getEmojiRegex(){
+      // Attempts to match extended pictographic sequences (including ZWJ) in modern browsers.
+      if (supportsUnicodeProps()){
+        return /(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?(?:\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?)*/gu;
+      }
+      // Fallback: broad Unicode ranges for emojis/symbols.
+      return /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
+    }
+
+    const EMOJI_REGEX = getEmojiRegex();
+
+    function detectEmojis(input){
+      const matches = input.match(EMOJI_REGEX);
+      return matches ? matches : [];
+    }
+
+    function stripVariationSelectors(emoji){
+      return emoji.replace(/\uFE0F|\uFE0E/g, "");
+    }
+
+    // Step 1: Preprocessing
+    function preprocess(input){
+      const lower = input.toLowerCase();
+
+      // Keep emojis intact by removing them first, then cleaning punctuation in the remaining text.
+      const emojis = detectEmojis(lower);
+      const withoutEmojis = lower.replace(EMOJI_REGEX, " ");
+
+      // Remove punctuation/symbols (Unicode-aware when possible), keep letters/numbers/whitespace.
+      let cleaned;
+      try {
+        cleaned = withoutEmojis.replace(/[^\p{L}\p{N}\s]+/gu, " ");
+      } catch {
+        cleaned = withoutEmojis.replace(/[^a-z0-9\s]+/gi, " ");
+      }
+
+      cleaned = cleaned.replace(/\s+/g, " ").trim();
+      const tokens = cleaned ? cleaned.split(" ") : [];
+
+      return { lower, cleaned, tokens, emojis };
+    }
+
+    // Step 3: Feature Extraction
+    function extractFeatures(tokens, emojis){
+      let posCount = 0;
+      let negCount = 0;
+
+      const posHits = [];
+      const negHits = [];
+
+      for (const t of tokens){
+        if (POS_WORDS.has(t)){ posCount++; posHits.push(t); }
+        if (NEG_WORDS.has(t)){ negCount++; negHits.push(t); }
+      }
+
+      const textScore = posCount - negCount;
+
+      let emojiScore = 0;
+      const emojiContrib = [];
+      for (const e of emojis){
+        const normalized = stripVariationSelectors(e);
+        const score = EMOJI_SCORE.has(e) ? EMOJI_SCORE.get(e) : (EMOJI_SCORE.has(normalized) ? EMOJI_SCORE.get(normalized) : 0);
+        emojiScore += score;
+        emojiContrib.push({ emoji: e, normalized, score });
+      }
+
+      return {
+        posCount,
+        negCount,
+        posHits,
+        negHits,
+        textScore,
+        emojiScore,
+        emojiContrib,
+      };
+    }
+
+    // Step 4: Model Evaluation (simulated)
+    function evaluateModel(textScore, emojiScore, tokenCount, emojiCount){
+      const raw = textScore + emojiScore;
+      const denom = Math.max(1, tokenCount + emojiCount);
+      let normalized = raw / denom;
+      normalized = Math.max(-1, Math.min(1, normalized));
+      return { raw, denom, normalized };
+    }
+
+    // Step 5: Final Result
+    function finalDecision(score){
+      if (score > 0) return "POSITIVE";
+      if (score < 0) return "NEGATIVE";
+      return "NEUTRAL";
+    }
+
+    // ========================
+    // UI
+    // ========================
+
+    const el = (id) => document.getElementById(id);
+
+    const app = el("app");
+    const inputText = el("inputText");
+    const runBtn = el("runBtn");
+    const runLabel = el("runLabel");
+    const clearBtn = el("clearBtn");
+    const status = el("status");
+
+    const steps = [el("step1"), el("step2"), el("step3"), el("step4"), el("step5"), el("step6")];
+
+    function format3(n){
+      const v = Math.round((n + Number.EPSILON) * 1000) / 1000;
+      return v.toFixed(3);
+    }
+
+    function resetOutputs(){
+      for (const s of steps) s.classList.remove("visible");
+
+      el("outInput").textContent = "(waiting for input)";
+      el("outPreText").textContent = "";
+      el("outTokens").textContent = "";
+      el("outEmojiList").textContent = "";
+      el("outEmojiMap").textContent = "";
+      el("outWordCounts").textContent = "";
+      el("outEmojiScores").textContent = "";
+      el("outEval").textContent = "";
+
+      el("metaChars").textContent = "chars: 0";
+      el("metaTokens").textContent = "tokens: 0";
+      el("metaEmojis").textContent = "emojis: 0";
+
+      el("metaPos").textContent = "posWords: 0";
+      el("metaNeg").textContent = "negWords: 0";
+      el("metaTextScore").textContent = "textScore: 0";
+      el("metaEmojiScore").textContent = "emojiScore: 0";
+
+      el("metaRaw").textContent = "raw: 0";
+      el("metaNorm").textContent = "normalized: 0.000";
+
+      el("outFinal").textContent = "NEUTRAL";
+      el("outFinalVerbose").textContent = "NEUTRAL";
+
+      const dot = el("stateDot");
+      dot.className = "stateDot neu";
+    }
+
+    function setRunning(isRunning){
+      if (isRunning){
+        app.classList.add("running");
+        runBtn.disabled = true;
+        clearBtn.disabled = true;
+        runLabel.textContent = "Analyzing…";
+        status.textContent = "Processing…";
+      } else {
+        app.classList.remove("running");
+        runBtn.disabled = false;
+        clearBtn.disabled = false;
+        runLabel.textContent = "Analyze";
+      }
+    }
+
+    function revealStepsSequentially(){
+      steps.forEach((node, idx) => {
+        const delay = 140 + idx * 170;
+        window.setTimeout(() => node.classList.add("visible"), delay);
+      });
+    }
+
+    function runPipeline(){
+      const input = inputText.value ?? "";
+      if (!input.trim()){
+        status.textContent = "Please enter some text (with optional emojis).";
+        resetOutputs();
+        return;
+      }
+
+      resetOutputs();
+      setRunning(true);
+
+      // Simulate staged processing so the UI feels step-by-step.
+      window.setTimeout(() => {
+        // Step 1
+        el("outInput").textContent = input;
+
+        // Step 1 + 2 + 3
+        const { cleaned, tokens, emojis } = preprocess(input);
+
+        el("metaChars").textContent = `chars: ${input.length}`;
+        el("metaTokens").textContent = `tokens: ${tokens.length}`;
+        el("metaEmojis").textContent = `emojis: ${emojis.length}`;
+
+        // Step 2 output
+        el("outPreText").textContent = cleaned || "(empty after preprocessing)";
+        el("outTokens").textContent = tokens.length ? tokens.join("\n") : "(no tokens)";
+
+        // Step 3 output
+        el("outEmojiList").textContent = emojis.length ? emojis.join(" ") + `\n\n(${emojis.length} detected)` : "(no emojis detected)";
+
+        const mapLines = [
+          "+1 : 😊 😄 😍 👍 ❤️",
+          "-1 : 😢 😡 👎 💔 😞",
+          " 0 : 😐 😶",
+        ].join("\n");
+        el("outEmojiMap").textContent = mapLines;
+
+        // Step 4
+        const feats = extractFeatures(tokens, emojis);
+        el("metaPos").textContent = `posWords: ${feats.posCount}`;
+        el("metaNeg").textContent = `negWords: ${feats.negCount}`;
+        el("metaTextScore").textContent = `textScore: ${feats.textScore}`;
+        el("metaEmojiScore").textContent = `emojiScore: ${feats.emojiScore}`;
+
+        const wordCountLines =
+          `Positive words (${feats.posCount}):\n` + (feats.posHits.length ? feats.posHits.join(", ") : "(none)") +
+          `\n\nNegative words (${feats.negCount}):\n` + (feats.negHits.length ? feats.negHits.join(", ") : "(none)") +
+          `\n\nText Score = posCount - negCount\n          = ${feats.posCount} - ${feats.negCount}\n          = ${feats.textScore}`;
+        el("outWordCounts").textContent = wordCountLines;
+
+        const emojiScoreLines = feats.emojiContrib.length
+          ? feats.emojiContrib.map(c => {
+              const shown = c.emoji;
+              const used = c.score;
+              return `${shown}  →  ${used >= 0 ? "+" : ""}${used}`;
+            }).join("\n") + `\n\nEmoji Score = ${feats.emojiScore}`
+          : "(no emoji scores)\n\nEmoji Score = 0";
+        el("outEmojiScores").textContent = emojiScoreLines;
+
+        // Step 5
+        const evalRes = evaluateModel(feats.textScore, feats.emojiScore, tokens.length, emojis.length);
+        el("metaRaw").textContent = `raw: ${evalRes.raw}`;
+        el("metaNorm").textContent = `normalized: ${format3(evalRes.normalized)}`;
+
+        el("outEval").textContent =
+          `Raw Score = textScore + emojiScore\n` +
+          `          = ${feats.textScore} + ${feats.emojiScore}\n` +
+          `          = ${evalRes.raw}\n\n` +
+          `Normalize by (tokenCount + emojiCount):\n` +
+          `Denominator = max(1, ${tokens.length} + ${emojis.length}) = ${evalRes.denom}\n` +
+          `Normalized Score = raw / denom\n` +
+          `                = ${evalRes.raw} / ${evalRes.denom}\n` +
+          `                = ${format3(evalRes.normalized)}\n\n` +
+          `Decision Rule:\n` +
+          `  score > 0 → POSITIVE\n` +
+          `  score < 0 → NEGATIVE\n` +
+          `  else      → NEUTRAL`;
+
+        // Step 6
+        const final = finalDecision(evalRes.normalized);
+        el("outFinal").textContent = final;
+        el("outFinalVerbose").textContent = `${final}  (score = ${format3(evalRes.normalized)})`;
+
+        const dot = el("stateDot");
+        dot.className = "stateDot " + (final === "POSITIVE" ? "pos" : final === "NEGATIVE" ? "neg" : "neu");
+
+        revealStepsSequentially();
+        setRunning(false);
+        status.textContent = "Done.";
+      }, 520);
+    }
+
+    runBtn.addEventListener("click", runPipeline);
+    clearBtn.addEventListener("click", () => {
+      inputText.value = "";
+      status.textContent = "Ready.";
+      resetOutputs();
+      inputText.focus();
+    });
+
+    document.addEventListener("click", (e) => {
+      const pill = e.target.closest("[data-example]");
+      if (!pill) return;
+      inputText.value = pill.getAttribute("data-example") || "";
+      inputText.focus();
+      status.textContent = "Example loaded. Click Analyze.";
+    });
+
+    inputText.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+        e.preventDefault();
+        runPipeline();
+      }
+    });
+
+    resetOutputs();
+  </script>
+</body>
+</html>
