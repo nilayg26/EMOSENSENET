@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EmoSenseNet Neural Interface</title>
+<style>
+:root {
+    --bg-base: #020204;
+    --neon-cyan: #00f3ff;
+    --neon-pink: #ff007f;
+    --neon-purple: #bc13fe;
+    --grid-color: rgba(0, 243, 255, 0.07);
+    --panel-bg: rgba(10, 10, 15, 0.85);
+    --text-main: #e0f8ff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
+.creators-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    border-left: 3px solid var(--neon-pink);
+    padding: 10px 15px;
+    background: rgba(255, 0, 127, 0.1);
+    font-size: 12px;
+    color: var(--neon-pink);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+    z-index: 10;
+    backdrop-filter: blur(5px);
+}
+
+.creators-badge span {
+    display: block;
+    color: #fff;
+    margin-top: 4px;
+    text-shadow: 0 0 5px var(--neon-pink);
+}
+
+.container {
+    width: 100%;
+    max-width: 750px;
+    background: var(--panel-bg);
+    border: 1px solid var(--neon-cyan);
+    padding: 40px;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.2), inset 0 0 20px rgba(0, 243, 255, 0.05);
+    position: relative;
+    z-index: 5;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+}
+
+.container::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 15px var(--neon-cyan);
+}
+
+h1 {
+    text-align: center;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+    text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-purple);
+    position: relative;
+}
+
+h1::after {
+    content: 'SYS.VER_3.1';
+    display: block;
+    font-size: 10px;
+    color: var(--neon-pink);
+    letter-spacing: 2px;
+    margin-top: 5px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(188, 19, 254, 0.5);
+    border-left: 4px solid var(--neon-purple);
+    color: var(--neon-cyan);
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+}
+
+input[type="text"]:focus {
+    border-color: var(--neon-cyan);
+    border-left: 4px solid var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+}
+
+input[type="text"]::placeholder {
+    color: rgba(0, 243, 255, 0.4);
+}
+
+button {
+    padding: 16px 24px;
+    background: rgba(0, 243, 255, 0.1);
+    color: var(--neon-cyan);
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    border: 1px solid var(--neon-cyan);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+#results {
+    display: none;
+}
+
+.result-card {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--neon-cyan);
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    position: relative;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: slideUp 0.4s ease forwards;
+}
+
+.result-card:nth-child(1) { animation-delay: 0.1s; }
+.result-card:nth-child(2) { animation-delay: 0.2s; }
+.result-card:nth-child(3) { animation-delay: 0.3s; border-left-color: var(--neon-purple); }
+.result-card:nth-child(4) { animation-delay: 0.4s; border-left-color: var(--neon-purple); }
+.result-card:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card:hover {
+    border-left-color: var(--neon-pink);
+    background: rgba(255, 0, 127, 0.05);
+}
+
+.result-card h3 {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+
+.result-card p {
+    font-size: 16px;
+    word-wrap: break-word;
+    color: #fff;
+}
+
+.highlight-score {
+    color: var(--neon-cyan);
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+}
+
+.final-decision {
+    border: 1px solid var(--neon-pink);
+    background: rgba(255, 0, 127, 0.1);
+    border-left: 5px solid var(--neon-pink);
+    animation-delay: 0.6s !important;
+}
+
+.final-decision h3 {
+    color: var(--neon-pink);
+}
+
+.final-decision p {
+    font-weight: bold;
+    font-size: 24px;
+    color: #fff;
+    text-shadow: 0 0 10px var(--neon-pink);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+@media (max-width: 768px) {
+    .creators-badge {
+        position: relative;
+        top: 0;
+        right: 0;
+        margin-bottom: 20px;
+        width: 100%;
+        text-align: center;
+        border-left: none;
+        border-top: 3px solid var(--neon-pink);
+    }
+    .container {
+        padding: 20px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="creators-badge">
+    Authorized Architects
+    <span>Nilay Gupta [ 23BCE0978 ]</span>
+    <span>Vasundhara Rai [ 23BCE0809 ]</span>
+</div>
+
+<div class="container">
+    <h1>EmoSenseNet</h1>
+    
+    <div class="input-group">
+        <input type="text" id="textInput" placeholder="> Enter target data stream (text + emojis)..." autocomplete="off">
+        <button onclick="processInput()">Initialize Analysis Sequence</button>
+    </div>
+
+    <div id="results">
+        <div class="result-card">
+            <h3>[01] Input Collection</h3>
+            <p id="outInput"></p>
+        </div>
+        <div class="result-card">
+            <h3>[02] Text Preprocessing</h3>
+            <p id="outPreprocessed"></p>
+        </div>
+        <div class="result-card">
+            <h3>[03] Emoji Detection</h3>
+            <p id="outEmojis"></p>
+        </div>
+        <div class="result-card">
+            <h3>[04] Feature Extraction</h3>
+            <p>Text Score: <span class="highlight-score" id="outTextScore"></span></p>
+            <p>Emoji Score: <span class="highlight-score" id="outEmojiScore"></span></p>
+        </div>
+        <div class="result-card">
+            <h3>[05] Model Evaluation</h3>
+            <p>Fused Score Z: <span class="highlight-score" id="outFusedScore"></span></p>
+        </div>
+        <div class="result-card final-decision">
+            <h3>[06] Final Judgment</h3>
+            <p id="outJudgment"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+function processInput() {
+    const input = document.getElementById('textInput').value;
+
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.style.display = 'none';
+    void resultsContainer.offsetWidth; 
+    
+    const preprocessedText = Array.from(input).filter(c => c.codePointAt(0) < 256).join('').trim();
+    const detectedEmojis = Array.from(input).filter(c => c.codePointAt(0) >= 256).join('').trim();
+
+    const textEmbeddings = {
+        "love": 1.0, "excellent": 1.0, "awesome": 0.9, "amazing": 0.9, "best": 0.9,
+        "great": 0.8, "happy": 0.8, "good": 0.5, "nice": 0.4, "okay": 0.0,
+        "fine": 0.0, "alright": 0.0, "bad": -0.5, "sad": -0.6, "terrible": -0.8,
+        "awful": -0.8, "disappointed": -0.8, "hate": -1.0, "worst": -1.0, "angry": -1.0
+    };
+
+    let textFeatureScore = 0.0;
+    const words = preprocessedText.toLowerCase().split(/\W+/);
+    for (const word of words) {
+        if (textEmbeddings.hasOwnProperty(word)) {
+            textFeatureScore += textEmbeddings[word];
+        }
+    }
+
+    const emojiEmbeddings = {
+        "😍": 1.0, "❤️": 1.0, "💯": 0.9, "✨": 0.8, "😊": 0.8, "😂": 0.6,
+        "🤣": 0.6, "👍": 0.5, "😐": 0.0, "😕": -0.3, "🙄": -0.4, "😢": -0.8,
+        "😭": -0.9, "💔": -0.9, "💀": -0.9, "😡": -1.0, "🤮": -1.0, "🤡": -1.0
+    };
+
+    let emojiFeatureScore = 0.0;
+    const emojis = Array.from(detectedEmojis);
+    for (const emoji of emojis) {
+         if (emojiEmbeddings.hasOwnProperty(emoji)) {
+             emojiFeatureScore += emojiEmbeddings[emoji];
+         }
+    }
+
+    const textAttentionWeight = 0.35;
+    const emojiAttentionWeight = 0.65;
+    const fusedScore = (textFeatureScore * textAttentionWeight) + (emojiFeatureScore * emojiAttentionWeight);
+
+    let finalJudgment = "Neutral";
+    if (fusedScore > 0.1) {
+        finalJudgment = "Positive";
+    } else if (fusedScore < -0.1) {
+        finalJudgment = "Negative";
+    }
+
+    document.getElementById('outInput').innerText = input || "NULL_INPUT";
+    document.getElementById('outPreprocessed').innerText = preprocessedText || "NONE_DETECTED";
+    document.getElementById('outEmojis').innerText = detectedEmojis || "NONE_DETECTED";
+    document.getElementById('outTextScore').innerText = textFeatureScore.toFixed(4);
+    document.getElementById('outEmojiScore').innerText = emojiFeatureScore.toFixed(4);
+    document.getElementById('outFusedScore').innerText = fusedScore.toFixed(4);
+    document.getElementById('outJudgment').innerText = finalJudgment;
+
+    resultsContainer.style.display = 'block';
+}
+</script>
+</body>
+</html>
